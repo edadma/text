@@ -1,18 +1,21 @@
 //@
 package xyz.hyperreal.text
 
-import java.awt.Font
+import java.awt.font.FontRenderContext
+import java.awt.{Font, GraphicsEnvironment}
 
 import scala.swing.{MainFrame, SimpleSwingApplication}
 
 
 object Main extends SimpleSwingApplication {
 
-  val textfont = new Font( "Monospaced", Font.PLAIN, 14 )
+//  println( GraphicsEnvironment.getLocalGraphicsEnvironment.getAvailableFontFamilyNames.toList filter (_ containsSlice "Nimbus") )
+
+  val textfont = new Font( "Monospaced", Font.PLAIN, 16 )
 
   def top =
     new MainFrame {
-      val buffer = new TextBuffer( textfont, peer.getFontMetrics(textfont).getFontRenderContext )
+      val buffer = new TextBuffer( textfont, new FontRenderContext(null, true, true) )//todo: frc needs to be settable after TextBuffer has been instantiated .getFontMetrics(textfont).getFontRenderContext )
 
       title = "Simple Text Editor"
       contents = new TextPanel( 25, 80, buffer )
