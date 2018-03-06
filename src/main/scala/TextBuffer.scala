@@ -7,7 +7,7 @@ import java.awt.font.{FontRenderContext, GlyphVector}
 import collection.mutable.ArrayBuffer
 
 
-class TextBuffer( font: Font, frc: FontRenderContext ) {
+class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   private val lines = new ArrayBuffer[Line]
 
@@ -25,6 +25,8 @@ class TextBuffer( font: Font, frc: FontRenderContext ) {
     }
 
   }
+
+  def rows = lines.length
 
   private def blankLine = new Line( new ArrayBuffer[Char], new ArrayBuffer[GlyphVector] )
 

@@ -1,12 +1,24 @@
 //@
 package xyz.hyperreal.text
 
-import scala.swing.Panel
+import scala.swing.{Graphics2D, Panel}
 import scala.swing.Swing._
 
 
-class TextPanel extends Panel {
+class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
 
-  preferredSize = (200, 200)
+  println( buffer.font.createGlyphVector( buffer.frc, Array.fill(cols)('j') ).getVisualBounds )
+
+  val maxCharBounds = buffer.font.getMaxCharBounds( buffer.frc )
+
+  preferredSize = ((maxCharBounds.getWidth*cols).toInt, (maxCharBounds.getHeight*rows).toInt)
+
+  override def paintComponent( g: Graphics2D ): Unit = {
+
+//    for (i <- 0 until buffer.rows) {
+//      g.drawGlyphVector( )
+//    }
+
+  }
 
 }
