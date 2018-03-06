@@ -8,7 +8,7 @@ import scala.swing.{MainFrame, SimpleSwingApplication}
 
 object Main extends SimpleSwingApplication {
 
-  val textfont = new Font("Monospaced", Font.PLAIN, 14)
+  val textfont = new Font( "Monospaced", Font.PLAIN, 14 )
 
   def top =
     new MainFrame {

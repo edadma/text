@@ -15,9 +15,11 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
 
   override def paintComponent( g: Graphics2D ): Unit = {
 
-//    for (i <- 0 until buffer.rows) {
-//      g.drawGlyphVector( )
-//    }
+    val extract = buffer.extract( 0, 25 )
+
+    for (l <- extract.rows; r <- l) {
+      g.drawGlyphVector( )
+    }
 
   }
 

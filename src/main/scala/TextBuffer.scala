@@ -124,9 +124,11 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     }
   }
 
-  def extract( row: Int, col: Int, len: Int ): Extract = {
-    null
+  def extract( row: Int, len: Int ) = {
+    check( row, 0 )
+    check( row + len - 1, 0 )
+    Extract( row, lines.view(row, row + len).map(_.runs.toList).toList )
   }
 }
 
-case class Extract( row: Int, col: Int, runs: List[GlyphVector] )
+case class Extract( row: Int, rows: List[List[GlyphVector]] )
