@@ -9,6 +9,12 @@ import collection.mutable.ArrayBuffer
 
 class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
+  private val views = new ArrayBuffer[TextPanel]
+
+  def addView( v: TextPanel ) = views += v
+
+  def removeView( v: TextPanel ) = views -= v
+
   private val lines = new ArrayBuffer[Line]
 
   lines += blankLine
@@ -42,7 +48,8 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
   def lastLine( row: Int ) = row == lines.length - 1
 
   def repaint( row1: Int, row2: Int ): Unit = {
-
+    for (v <- views)
+      v.repaint()
   }
 
   def insert( c: Char, row: Int, col: Int ) {
