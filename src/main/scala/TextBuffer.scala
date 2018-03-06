@@ -37,7 +37,7 @@ class TextBuffer( font: Font, frc: FontRenderContext ) {
 
   def eol( row: Int, col: Int ): Boolean = col == lines(row).chars.length
 
-  def insert( c: Char, row: Int, col: Int ): Unit = {
+  def insert( c: Char, row: Int, col: Int ): Extract = {
     check( row, col )
 
     val line = lines(row)
@@ -60,15 +60,20 @@ class TextBuffer( font: Font, frc: FontRenderContext ) {
       (runs, 0)
     }
 
-    find match {
-      case (run, 0) => line.runs.insert( run, font.createGlyphVector(frc, c.toString) )
-      case (run, offset) =>
-        line.runs.insert( run + 1, font.createGlyphVector(frc, c.toString) )
-        line.runs.insert( run + 2, font.createGlyphVector(frc, line.chars.view(col, line.runs(run).getNumGlyphs - offset).toArray) )
-        line.runs(run) = font.createGlyphVector(frc, line.chars.view(col - offset, col).toArray )
-    }
-  }
+    val insertion =
+      find match {
+        case (run, 0) =>
+          line.runs.insert( run, font.createGlyphVector(frc, c.toString) )
+          run
+        case (run, offset) =>
+          line.runs.insert( run + 1, font.createGlyphVector(frc, c.toString) )
+          line.runs.insert( run + 2, font.createGlyphVector(frc, line.chars.view(col, line.runs(run).getNumGlyphs - offset).toArray) )
+          line.runs(run) = font.createGlyphVector(frc, line.chars.view(col - offset, col).toArray )
+          run + 1
+      }
 
+    Extract( row, col, line.runs.view(insertion, line.runs.length).toList )
+  }
 
   def overwrite( c: Char, row: Int, col: Int ): Unit = {
 
@@ -95,7 +100,9 @@ class TextBuffer( font: Font, frc: FontRenderContext ) {
     }
   }
 
-  def extract( row: Int, col: Int, len: Int ): (Int, List[GlyphVector]) = {
+  def extract( row: Int, col: Int, len: Int ): Extract = {
     null
   }
 }
+
+case class Extract( row: Int, col: Int, runs: List[GlyphVector] )
