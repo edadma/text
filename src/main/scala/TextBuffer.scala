@@ -13,9 +13,9 @@ class TextBuffer( font: Font, frc: FontRenderContext ) {
 
   lines += blankLine
 
-  private case class Line( chars: ArrayBuffer[Char]/*, styles: ArrayBuffer[Style]*/, runs: ArrayBuffer[GlyphVector] )
+  private class Line( val chars: ArrayBuffer[Char]/*, styles: ArrayBuffer[Style]*/, val runs: ArrayBuffer[GlyphVector] )
 
-  private case class Style( length: Int, color: Color, italic: Boolean, bold: Boolean )
+  private case class Style( length: Int, color: Color, italic: Boolean, bold: Boolean, underline: Boolean, blink: Boolean )
 
   def show: Unit = {
 
@@ -26,7 +26,7 @@ class TextBuffer( font: Font, frc: FontRenderContext ) {
 
   }
 
-  private def blankLine = Line( new ArrayBuffer[Char], new ArrayBuffer[GlyphVector] )
+  private def blankLine = new Line( new ArrayBuffer[Char], new ArrayBuffer[GlyphVector] )
 
   private def check( row: Int, col: Int ) {
     require( row >= 0, "negative row" )
@@ -35,9 +35,15 @@ class TextBuffer( font: Font, frc: FontRenderContext ) {
     require( col <= lines(row).chars.length, "column is beyond end of line" )
   }
 
-  def eol( row: Int, col: Int ): Boolean = col == lines(row).chars.length
+  def endOfLine( row: Int, col: Int ) = col == lines(row).chars.length
 
-  def insert( c: Char, row: Int, col: Int ): Extract = {
+  def lastLine( row: Int ) = row == lines.length - 1
+
+  def repaint( row1: Int, row2: Int ): Unit = {
+
+  }
+
+  def insert( c: Char, row: Int, col: Int ) {
     check( row, col )
 
     val line = lines(row)
@@ -60,19 +66,35 @@ class TextBuffer( font: Font, frc: FontRenderContext ) {
       (runs, 0)
     }
 
-    val insertion =
+    if (c == '\n') {
+      if (endOfLine( row, col ) && lastLine( row ))
+        lines += blankLine
+      else if (col == 0)
+        lines.insert( row, blankLine )
+      else {
+        find match {
+         case (run, 0) =>
+           lines.insert( row + 1, new Line(line.chars.slice(col, line.chars.length), line.runs.slice(run, line.runs.length)) )
+           line.chars.remove( col, line.chars.length - col )
+           line.runs.remove( run, line.runs.length - run )
+//         case (run, offset) =>
+        }
+      }
+
+      repaint( row, lines.length - 1 )
+    } else {
       find match {
         case (run, 0) =>
           line.runs.insert( run, font.createGlyphVector(frc, c.toString) )
-          run
-        case (run, offset) =>
+         case (run, offset) =>
           line.runs.insert( run + 1, font.createGlyphVector(frc, c.toString) )
           line.runs.insert( run + 2, font.createGlyphVector(frc, line.chars.view(col, line.runs(run).getNumGlyphs - offset).toArray) )
-          line.runs(run) = font.createGlyphVector(frc, line.chars.view(col - offset, col).toArray )
-          run + 1
+          line.runs(run) = font.createGlyphVector( frc, line.chars.view(col - offset, col).toArray )
       }
 
-    Extract( row, col, line.runs.view(insertion, line.runs.length).toList )
+      repaint( row, row )
+//      Extract( row, col, line.runs.view(insertion, line.runs.length).toList )
+    }
   }
 
   def overwrite( c: Char, row: Int, col: Int ): Unit = {
