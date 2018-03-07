@@ -11,8 +11,11 @@ import scala.swing.event.{Key, KeyPressed, KeyTyped}
 
 class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
 
-  val width = buffer.font.createGlyphVector( buffer.frc, "M" ).getLogicalBounds.getWidth
-  val height = buffer.font.createGlyphVector( buffer.frc, "{" ).getVisualBounds.getHeight
+  val (width, height) = {
+    val x = buffer.font.createGlyphVector( buffer.frc, "X" )
+
+    (x.getLogicalBounds.getWidth, x.getLogicalBounds.getHeight)
+  }
 
   var row = 0
   var col = 0

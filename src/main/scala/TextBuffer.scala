@@ -52,6 +52,20 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
       v.repaint()
   }
 
+  def insert( s: String, row: Int, col: Int ) {
+    def _insert( idx: Int, r: Int, c: Int ): Unit = {
+      if (idx < s.length) {
+        insert( s(idx), r, c )
+
+        val (r1, c1) = next( r, c ).get
+
+        _insert( idx + 1, r1, c1 )
+      }
+    }
+
+    _insert( 0, row, col )
+  }
+
   def insert( c: Char, row: Int, col: Int ) {
     check( row, col )
 
@@ -118,9 +132,14 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     null
   }
 
-  def next( row: Int, col: Int ): Option[(Int, Int)] = {
-    null
-  }
+  def next( row: Int, col: Int ): Option[(Int, Int)] =
+    if (endOfLine( row, col ))
+      if (lastLine( row ))
+        None
+      else
+        Some( (row + 1, 0) )
+    else
+      Some( (row, col + 1) )
 
   def backspace( row: Int, col: Int ): Boolean = {
     prev( row, col ) match {
