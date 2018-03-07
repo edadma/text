@@ -12,7 +12,7 @@ import scala.swing.Swing._
 import scala.swing.event.{Key, KeyPressed, KeyTyped}
 
 
-class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
+class TextPanel( cols: Int, rows: Int, buffer: TextBuffer ) extends Panel {
 
   val (width, height, ascent) = {
     val bounds = buffer.font.createGlyphVector( buffer.frc, "X" ).getLogicalBounds
@@ -31,7 +31,7 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
   blink.start
 
   preferredSize = ((width*cols).toInt, (height*rows).toInt)
-  background = DARK_GRAY
+  background = DARK_GRAY.darker
   foreground = LIGHT_GRAY
   peer.setFocusTraversalKeysEnabled( false )
   listenTo( keys )
