@@ -3,6 +3,7 @@ package xyz.hyperreal.text
 
 import java.awt.Color._
 import java.awt.RenderingHints
+import java.awt.geom.Line2D
 
 import scala.swing.{Graphics2D, Panel}
 import scala.swing.Swing._
@@ -28,8 +29,23 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
   listenTo( keys )
 
   reactions += {
-    case KeyTyped(_, c, _, _) =>
-      curpos = buffer.insertGlyphs( c.toString, curpos )
+    case KeyTyped( _, '\n', _, _ ) => curpos = buffer.newline( curpos )
+    case KeyTyped( _, '\b', _, _ ) => buffer.backspace( curpos ) foreach (curpos = _)
+    case KeyTyped( _, c, _, _ ) => curpos = buffer.insertGlyphs( c.toString, curpos )
+    case KeyPressed( _, Key.Right, _, _ ) =>
+      buffer.right( curpos ) foreach (curpos = _)
+      repaint
+    case KeyPressed( _, Key.Left, _, _ ) =>
+      buffer.left( curpos ) foreach (curpos = _)
+      repaint
+    case KeyPressed( _, Key.Up, _, _ ) =>
+      buffer.up( curpos ) foreach (curpos = _)
+      repaint
+    case KeyPressed( _, Key.Down, _, _ ) =>
+      buffer.down( curpos ) foreach (curpos = _)
+      repaint
+    case KeyPressed( _, Key.Delete, _, _ ) =>
+      buffer.delete( curpos )
   }
 
   focusable = true
@@ -55,6 +71,10 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
       rowCount += 1
     }
 
+    val x = curpos.col*width
+    val y = curpos.row*height + height
+
+    g.draw( new Line2D.Double(x, y, x + width, y) )
   }
 
 }

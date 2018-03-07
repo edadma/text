@@ -43,13 +43,17 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     require( col <= lines(row).chars.length, "column is beyond end of line" )
   }
 
-  def endOfLine( row: Int, col: Int ) = col == lines(row).chars.length
+  def startOfLine( pos: Pos ) = pos.col == 0
 
-  def lastLine( row: Int ) = row == lines.length - 1
+  def endOfLine( pos: Pos ) = pos.col == lines(pos.row).chars.length
+
+  def firstLine( pos: Pos ) = pos.row == 0
+
+  def lastLine( pos: Pos ) = pos.row == lines.length - 1
 
   def repaint( row1: Int, row2: Int ): Unit = {
     for (v <- views)
-      v.repaint()
+      v.repaint
   }
 
   def insertEach( s: String, pos: Pos ): Pos = {
@@ -99,7 +103,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
     val line = lines(row)
 
-    if (endOfLine( row, col ) && lastLine( row ))
+    if (endOfLine( pos ) && lastLine( pos ))
       lines += blankLine
     else if (col == 0)
       lines.insert( row, blankLine )
@@ -155,35 +159,51 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     Pos( row, col + s.length )
   }
 
-  def overwrite( c: Char, row: Int, col: Int ): Unit = {
+  def overwrite( c: Char, pos: Pos ): Unit = {
 
   }
 
-  def delete( row: Int, col: Int ): Unit = {
+  def delete( pos: Pos ): Unit = {
 
   }
 
-  def prev( row: Int, col: Int ): Option[(Int, Int)] = {
-    null
-  }
-
-  def next( row: Int, col: Int ): Option[(Int, Int)] =
-    if (endOfLine( row, col ))
-      if (lastLine( row ))
+  def left( pos: Pos ): Option[Pos] =
+    if (startOfLine( pos ))
+      if (firstLine( pos ))
         None
       else
-        Some( (row + 1, 0) )
+        Some( Pos(pos.row - 1, lines(pos.row - 1).chars.length) )
     else
-      Some( (row, col + 1) )
+      Some( Pos( pos.row, pos.col - 1) )
 
-  def backspace( row: Int, col: Int ): Boolean = {
-    prev( row, col ) match {
-      case None => false
-      case Some( (r, c) ) =>
-        delete( r, c )
-        true
+  def right( pos: Pos ): Option[Pos] =
+    if (endOfLine( pos ))
+      if (lastLine( pos ))
+        None
+      else
+        Some( Pos(pos.row + 1, 0) )
+    else
+      Some( Pos(pos.row, pos.col + 1) )
+
+  def up( pos: Pos ): Option[Pos] =
+    if (firstLine( pos ))
+      None
+    else
+      Some( Pos(pos.row - 1, pos.col min lines(pos.row - 1).chars.length) )
+
+  def down( pos: Pos ): Option[Pos] =
+    if (lastLine( pos ))
+      None
+    else
+      Some( Pos(pos.row + 1, pos.col min lines(pos.row + 1).chars.length) )
+
+  def backspace( pos: Pos ): Option[Pos] =
+    left( pos ) match {
+      case None => None
+      case res@Some( p ) =>
+        delete( p )
+        res
     }
-  }
 
   def extract( row: Int, len: Int ) = {
     check( row, 0 )

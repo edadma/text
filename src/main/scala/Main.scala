@@ -9,9 +9,9 @@ import scala.swing.{MainFrame, SimpleSwingApplication}
 
 object Main extends SimpleSwingApplication {
 
-//  println( GraphicsEnvironment.getLocalGraphicsEnvironment.getAvailableFontFamilyNames.toList filter (_ containsSlice "Nimbus") )
-
   val textfont = new Font( "Monospaced", Font.PLAIN, 16 )
+//  val textfont = new Font( "DejaVu Sans Mono", Font.PLAIN, 16 )
+//  val textfont = new Font( "FreeMono", Font.PLAIN, 16 )
 
   def top =
     new MainFrame {
@@ -20,7 +20,7 @@ object Main extends SimpleSwingApplication {
 
 	    p = buffer.insertEach( "asdfASDFasdfASDF", p )
 	    p = buffer.newline( p )
-      buffer.insert( "asdfASDFasdfASDF\n[asdf][][]{}{}{}\nTTTTTTTTTTTTTT", p )
+      buffer.insert( "asdfASDFasdfASDF\n[asdf][][]{}{}{}\nTTTTTTTTTTTTTTTT", p )
       title = "Simple Text Editor"
       contents = new TextPanel( 25, 80, buffer )
     }
