@@ -59,6 +59,8 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   def endOfLine( pos: Pos ) = pos.col == lines(pos.row).chars.length
 
+  def endOfDocument( pos: Pos ) = endOfLine( pos ) && lastLine( pos )
+
   def firstLine( pos: Pos ) = pos.row == 0
 
   def lastLine( pos: Pos ) = pos.row == lines.length - 1
@@ -113,7 +115,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
     val line = lines(row)
 
-    if (endOfLine( pos ) && lastLine( pos ))
+    if (endOfDocument( pos ))
       lines += blankLine
     else if (col == 0)
       lines.insert( row, blankLine )
@@ -169,12 +171,17 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   }
 
-  def delete( pos: Pos ): Unit = {
-    if (endOfLine( pos )) {
-      if (!lastLine( pos )) {
+  def check( from: Pos, to: Pos ): Unit =
+    require( if (from.row == to.row) from.col <= to.col else from.row <= to.row, s"$from is not before $to" )
 
-      }
-    } else {
+  def delete( pos: Pos ) = delete( pos, pos )
+
+  def delete( from: Pos, to: Pos ): Unit = {
+    check( from, to )
+
+    if (!endOfDocument( from )) {
+      val to1 = if (endOfDocument( to )) left( to ) else to
+
 
     }
   }
