@@ -3,7 +3,7 @@ package xyz.hyperreal.text
 
 import java.awt.Color._
 import java.awt.{BasicStroke, RenderingHints}
-import java.awt.geom.Line2D
+import java.awt.geom.{Line2D, Rectangle2D}
 
 import javax.swing.Timer
 
@@ -15,7 +15,7 @@ import scala.swing.event.{Key, KeyPressed, KeyTyped}
 class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
 
   val (width, height) = {
-    val bounds = buffer.font.createGlyphVector( buffer.frc, "[" ).getLogicalBounds
+    val bounds = buffer.font.createGlyphVector( buffer.frc, "X" ).getLogicalBounds
 
     println( bounds )
     (bounds.getWidth, bounds.getHeight)
@@ -23,6 +23,7 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
   var showcursor = true
   val blink = new Timer( 500, ActionListener(_ => {showcursor = !showcursor; repaint}) )//todo: restart timer and turn on curson whenever buffer is mutated
   var curpos = Pos( 0, 0 )
+  var selection: Option[Pos] = None
 
   buffer addView this
   blink.start
@@ -38,9 +39,15 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
     case KeyTyped( _, '\b', _, _ ) => buffer.backspace( curpos ) foreach (curpos = _)
     case KeyTyped( _, '\t', _, _ ) => curpos = buffer.tab( curpos )
     case KeyTyped( _, c, _, _ ) => curpos = buffer.insertGlyphs( c.toString, curpos )
-    case KeyPressed( _, Key.Right, _, _ ) =>
+    case KeyPressed( _, Key.Right, m, _ ) =>
+      if (m == Key.Modifier.Shift) {
+        if (selection isEmpty)
+          selection = Some( curpos )
+      }
+
       buffer.right( curpos ) foreach (curpos = _)
-      repaint
+
+     repaint
     case KeyPressed( _, Key.Left, _, _ ) =>
       buffer.left( curpos ) foreach (curpos = _)
       repaint
@@ -52,7 +59,7 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
       repaint
     case KeyPressed( _, Key.Delete, _, _ ) =>
       buffer.delete( curpos )
-  }
+   }
 
   focusable = true
   requestFocus
@@ -64,9 +71,24 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
 
     val extract = buffer.extract( 0, buffer.rows min 25 )
 
+    selection foreach { s =>
+      def box( row: Int, from: Int, to: Int ): Unit = {
+        val y = row*height
+
+        g fill new Rectangle2D.Double( from*width, y, (to - 1)*width, y + height )
+      }
+
+      val (from, to) = if (curpos <= s) (curpos, s) else (s, curpos)
+      val c = g.getColor
+
+      g setColor DARK_GRAY
+      box( from.row, from.col, extract.rows(from.row)._1 - 1 )
+      g setColor c
+    }
+
     var rowCount = 0
 
-    for (l <- extract.rows) {
+    for ((_, l) <- extract.rows) {
       var colCount = 0
 
       for (r <- l) {

@@ -55,6 +55,8 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     (row, col)
   }
 
+  private def check( from: Pos, to: Pos ): Unit = require( from <= to, s"$from is not before $to" )
+
   private def find( pos: Pos ): (Int, Int) = {
     var count = 0
     val runs = lines(pos.row).runs.length
@@ -171,9 +173,6 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   }
 
-  def check( from: Pos, to: Pos ): Unit =
-    require( if (from.row == to.row) from.col <= to.col else from.row <= to.row, s"$from is not before $to" )
-
   def delete( pos: Pos ): Unit = delete( pos, pos )
 
   def removeLeftRun( from: Pos, run: Int, offset: Int ): Unit = {
@@ -265,9 +264,12 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   def extract( row: Int, len: Int ) = {
     require( 0 <= row && row < lines.length, s"row index out of range: $row" )
-    Extract( row, lines.view(row, row + len).map(_.runs.toList).toList )
+    Extract( row, lines.view(row, row + len).map(l => (l.runs.aggregate(0)((x, v) => x + v.getNumGlyphs, _ + _), l.runs.toList)).toVector )
   }
 }
 
-case class Pos( row: Int, col: Int )
-case class Extract( row: Int, rows: List[List[GlyphVector]] )
+case class Pos( row: Int, col: Int ) {
+  def <=( pos: Pos ) = row < pos.row  || row == pos.row && col <= pos.col
+}
+
+case class Extract( row: Int, rows: Vector[(Int, List[GlyphVector])] )
