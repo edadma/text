@@ -15,6 +15,15 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   def removeView( v: TextPanel ) = views -= v
 
+  private var tabs = 4
+
+  def tabStops = tabs
+
+  def tabStops_=( t: Int ): Unit = {
+    require( 0 < t && t <= 80, s"tabstop out of range: $t" )
+    tabs = t
+  }
+
   private val lines = new ArrayBuffer[Line]
 
   lines += blankLine
@@ -36,11 +45,14 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   private def blankLine = new Line( new ArrayBuffer[Char], new ArrayBuffer[GlyphVector] )
 
-  private def check( row: Int, col: Int ) {
+  private def check( pos: Pos ): (Int, Int) = {
+    val Pos( row, col ) = pos
+
     require( row >= 0, "negative row" )
     require( row < lines.length, "row is beyond last line" )
     require( col >= 0, "negative column" )
     require( col <= lines(row).chars.length, "column is beyond end of line" )
+    (row, col)
   }
 
   def startOfLine( pos: Pos ) = pos.col == 0
@@ -67,9 +79,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
   }
 
   def insert( s: String, pos: Pos ): Pos = {
-    val Pos(row, col) = pos
-
-    check( row, col )
+    check( pos )
 
     val parts = new ArrayBuffer[String]
 
@@ -96,10 +106,10 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     nextpos
   }
 
-  def newline( pos: Pos ): Pos = {
-    val Pos(row, col) = pos
+  def tab( pos: Pos ) = insertGlyphs( " "*(tabs - pos.col%tabs), pos )
 
-    check( row, col )
+  def newline( pos: Pos ): Pos = {
+    val (row, col) = check( pos )
 
     val line = lines(row)
 
@@ -138,23 +148,19 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
   }
 
   def insertGlyphs( s: String, pos: Pos ): Pos = {
-    val Pos(row, col) = pos
-
-    check( row, col )
-
+    val (row, col) = check( pos )
     val line = lines(row)
-
-    line.chars.insertAll( col, s )
 
     find( row, col ) match {
       case (run, 0) =>
         line.runs.insert( run, font.createGlyphVector(frc, s) )
-       case (run, offset) =>
+      case (run, offset) =>
         line.runs.insert( run + 1, font.createGlyphVector(frc, s) )
-        line.runs.insert( run + 2, font.createGlyphVector(frc, line.chars.view(col, line.runs(run).getNumGlyphs - offset).toArray) )
+        line.runs.insert( run + 2, font.createGlyphVector(frc, line.chars.view(col, col + line.runs(run).getNumGlyphs - offset).toArray) )
         line.runs(run) = font.createGlyphVector( frc, line.chars.view(col - offset, col).toArray )
     }
 
+    line.chars.insertAll( col, s )
     repaint( row, row )
     Pos( row, col + s.length )
   }
@@ -212,8 +218,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     }
 
   def extract( row: Int, len: Int ) = {
-    check( row, 0 )
-    check( row + len - 1, 0 )
+    require( 0 <= row && row < lines.length, s"row index out of range: $row" )
     Extract( row, lines.view(row, row + len).map(_.runs.toList).toList )
   }
 }

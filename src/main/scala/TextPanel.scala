@@ -25,12 +25,13 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
   preferredSize = ((width*cols).toInt, (height*rows).toInt)
   background = BLACK
   foreground = LIGHT_GRAY
-
+  peer.setFocusTraversalKeysEnabled( false )
   listenTo( keys )
 
   reactions += {
     case KeyTyped( _, '\n', _, _ ) => curpos = buffer.newline( curpos )
     case KeyTyped( _, '\b', _, _ ) => buffer.backspace( curpos ) foreach (curpos = _)
+    case KeyTyped( _, '\t', _, _ ) => curpos = buffer.tab( curpos )
     case KeyTyped( _, c, _, _ ) => curpos = buffer.insertGlyphs( c.toString, curpos )
     case KeyPressed( _, Key.Right, _, _ ) =>
       buffer.right( curpos ) foreach (curpos = _)
