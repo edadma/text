@@ -14,11 +14,10 @@ import scala.swing.event.{Key, KeyPressed, KeyTyped}
 
 class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
 
-  val (width, height) = {
+  val (width, height, ascent) = {
     val bounds = buffer.font.createGlyphVector( buffer.frc, "X" ).getLogicalBounds
 
-    println( bounds )
-    (bounds.getWidth, bounds.getHeight)
+    (bounds.getWidth, bounds.getHeight, -bounds.getY)
     }
   var showcursor = true
   val blink = new Timer( 500, ActionListener(_ => {showcursor = !showcursor; repaint}) )//todo: restart timer and turn on curson whenever buffer is mutated
@@ -75,14 +74,20 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
       def box( row: Int, from: Int, to: Int ): Unit = {
         val y = row*height
 
-        g fill new Rectangle2D.Double( from*width, y, (to - 1)*width, y + height )
+        g fill new Rectangle2D.Double( from*width, y, (to - from + 1)*width, height )
       }
 
       val (from, to) = if (curpos <= s) (curpos, s) else (s, curpos)
       val c = g.getColor
 
-      g setColor DARK_GRAY
-      box( from.row, from.col, extract.rows(from.row)._1 - 1 )
+      g setColor BLUE
+
+      if (from.row == to.row)
+        box( from.row, from.col, to.col )
+      else {
+        box( from.row, from.col, extract.rows(from.row)._1 - 1 )
+      }
+
       g setColor c
     }
 
@@ -92,7 +97,7 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
       var colCount = 0
 
       for (r <- l) {
-        g.drawGlyphVector( r, (width*colCount).toFloat, (height*rowCount + height).toFloat )
+        g.drawGlyphVector( r, (width*colCount).toFloat, (height*rowCount + ascent).toFloat )
         colCount += r.getNumGlyphs
       }
 
@@ -100,7 +105,7 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
     }
 
     val x = curpos.col*width
-    val y = curpos.row*height + height + 2
+    val y = curpos.row*height + ascent + 2
 
     if (showcursor) {
       g.setStroke( new BasicStroke(3) )
