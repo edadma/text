@@ -52,21 +52,21 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
       v.repaint()
   }
 
-  def insertEach( s: String, row: Int, col: Int ) {
-    def _insert( idx: Int, r: Int, c: Int ): Unit = {
-      if (idx < s.length) {
-        insertGlyphs( s(idx), r, c )
+  def insertEach( s: String, pos: Pos ): Pos = {
+    def _insert( idx: Int, p: Pos ): Pos =
+      if (idx < s.length)
+        _insert( idx + 1, insertGlyphs(s(idx).toString, p) )
+      else
+        p
 
-        val (r1, c1) = next( r, c ).get
-
-        _insert( idx + 1, r1, c1 )
-      }
-    }
-
-    _insert( 0, row, col )
+    _insert( 0, pos )
   }
 
-  def insert( s: String, row: Int, col: Int ): Unit = {
+  def insert( s: String, pos: Pos ): Pos = {
+    val Pos(row, col) = pos
+
+    check( row, col )
+
     val parts = new ArrayBuffer[String]
 
     def separate( from: Int ): Unit =
@@ -79,12 +79,22 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
     separate( 0 )
 
-    for (i <- parts.indices) {
+    var nextpos = pos
 
+    for (i <- parts.indices) {
+      if (parts(i) nonEmpty)
+        nextpos = insertGlyphs( parts(i), nextpos )
+
+      if (i < parts.length - 1)
+        nextpos = newline( nextpos )
     }
+
+    nextpos
   }
 
-  def newline( row: Int, col: Int ): Unit = {
+  def newline( pos: Pos ): Pos = {
+    val Pos(row, col) = pos
+
     check( row, col )
 
     val line = lines(row)
@@ -104,7 +114,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     }
 
     repaint( row, lines.length - 1 )
-
+    Pos( row + 1, 0 )
   }
 
   def find( row: Int, col: Int ): (Int, Int) = {
@@ -123,24 +133,26 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     (runs, 0)
   }
 
-  def insertGlyphs( c: Char, row: Int, col: Int ) {
+  def insertGlyphs( s: String, pos: Pos ): Pos = {
+    val Pos(row, col) = pos
+
     check( row, col )
 
     val line = lines(row)
 
-    line.chars.insert( col, c )
+    line.chars.insertAll( col, s )
 
     find( row, col ) match {
       case (run, 0) =>
-        line.runs.insert( run, font.createGlyphVector(frc, c.toString) )
+        line.runs.insert( run, font.createGlyphVector(frc, s) )
        case (run, offset) =>
-        line.runs.insert( run + 1, font.createGlyphVector(frc, c.toString) )
+        line.runs.insert( run + 1, font.createGlyphVector(frc, s) )
         line.runs.insert( run + 2, font.createGlyphVector(frc, line.chars.view(col, line.runs(run).getNumGlyphs - offset).toArray) )
         line.runs(run) = font.createGlyphVector( frc, line.chars.view(col - offset, col).toArray )
     }
 
     repaint( row, row )
-//      Extract( row, col, line.runs.view(insertion, line.runs.length).toList )
+    Pos( row, col + s.length )
   }
 
   def overwrite( c: Char, row: Int, col: Int ): Unit = {
@@ -180,4 +192,5 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
   }
 }
 
+case class Pos( row: Int, col: Int )
 case class Extract( row: Int, rows: List[List[GlyphVector]] )

@@ -16,8 +16,11 @@ object Main extends SimpleSwingApplication {
   def top =
     new MainFrame {
       val buffer = new TextBuffer( textfont, new FontRenderContext(null, true, true) )//todo: frc needs to be settable after TextBuffer has been instantiated .getFontMetrics(textfont).getFontRenderContext )
+			var p = Pos( 0, 0 )
 
-      buffer.insertEach( "asdfASDFasdfASDF\n[asdf][][]{}{}{}\nTTTTTTTTTTTTTT", 0, 0 )
+	    p = buffer.insertEach( "asdfASDFasdfASDF", p )
+	    p = buffer.newline( p )
+      buffer.insert( "asdfASDFasdfASDF\n[asdf][][]{}{}{}\nTTTTTTTTTTTTTT", p )
       title = "Simple Text Editor"
       contents = new TextPanel( 25, 80, buffer )
     }

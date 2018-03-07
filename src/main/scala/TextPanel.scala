@@ -17,8 +17,7 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
     (x.getLogicalBounds.getWidth, x.getLogicalBounds.getHeight)
   }
 
-  var row = 0
-  var col = 0
+  var curpos = Pos( 0, 0 )
 
   buffer addView this
 
@@ -30,13 +29,7 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
 
   reactions += {
     case KeyTyped(_, c, _, _) =>
-      buffer.insertGlyphs( c, row, col )
-
-      if (c == '\n') {
-        row += 1
-        col = 0
-      } else
-        col += 1
+      curpos = buffer.insertGlyphs( c.toString, curpos )
   }
 
   focusable = true
