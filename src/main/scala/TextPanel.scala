@@ -30,7 +30,7 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
 
   reactions += {
     case KeyTyped(_, c, _, _) =>
-      buffer.insert( c, row, col )
+      buffer.insertGlyphs( c, row, col )
 
       if (c == '\n') {
         row += 1

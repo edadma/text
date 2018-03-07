@@ -52,10 +52,10 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
       v.repaint()
   }
 
-  def insert( s: String, row: Int, col: Int ) {
+  def insertEach( s: String, row: Int, col: Int ) {
     def _insert( idx: Int, r: Int, c: Int ): Unit = {
       if (idx < s.length) {
-        insert( s(idx), r, c )
+        insertGlyphs( s(idx), r, c )
 
         val (r1, c1) = next( r, c ).get
 
@@ -66,58 +66,81 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     _insert( 0, row, col )
   }
 
-  def insert( c: Char, row: Int, col: Int ) {
+  def insert( s: String, row: Int, col: Int ): Unit = {
+    val parts = new ArrayBuffer[String]
+
+    def separate( from: Int ): Unit =
+      s indexOf ('\n', from) match {
+        case -1 => parts += s substring from
+        case idx =>
+          parts += s.substring( from, idx )
+          separate( idx + 1 )
+      }
+
+    separate( 0 )
+
+    for (i <- parts.indices) {
+
+    }
+  }
+
+  def newline( row: Int, col: Int ): Unit = {
+    check( row, col )
+
+    val line = lines(row)
+
+    if (endOfLine( row, col ) && lastLine( row ))
+      lines += blankLine
+    else if (col == 0)
+      lines.insert( row, blankLine )
+    else {
+      find( row, col ) match {
+       case (run, 0) =>
+         lines.insert( row + 1, new Line(line.chars.slice(col, line.chars.length), line.runs.slice(run, line.runs.length)) )
+         line.chars.remove( col, line.chars.length - col )
+         line.runs.remove( run, line.runs.length - run )
+//         case (run, offset) =>
+      }
+    }
+
+    repaint( row, lines.length - 1 )
+
+  }
+
+  def find( row: Int, col: Int ): (Int, Int) = {
+    var count = 0
+    val runs = lines(row).runs.length
+
+    for (i <- 0 until runs) {
+      val len = lines(row).runs(i).getNumGlyphs
+
+      if (count <= col && col < count + len)
+        return (i, col - count)
+      else
+        count += len
+    }
+
+    (runs, 0)
+  }
+
+  def insertGlyphs( c: Char, row: Int, col: Int ) {
     check( row, col )
 
     val line = lines(row)
 
     line.chars.insert( col, c )
 
-    def find: (Int, Int) = {
-      var count = 0
-      val runs = lines(row).runs.length
-
-      for (i <- 0 until runs) {
-        val len = lines(row).runs(i).getNumGlyphs
-
-        if (count <= col && col < count + len)
-          return (i, col - count)
-        else
-          count += len
-      }
-
-      (runs, 0)
+    find( row, col ) match {
+      case (run, 0) =>
+        line.runs.insert( run, font.createGlyphVector(frc, c.toString) )
+       case (run, offset) =>
+        line.runs.insert( run + 1, font.createGlyphVector(frc, c.toString) )
+        line.runs.insert( run + 2, font.createGlyphVector(frc, line.chars.view(col, line.runs(run).getNumGlyphs - offset).toArray) )
+        line.runs(run) = font.createGlyphVector( frc, line.chars.view(col - offset, col).toArray )
     }
 
-    if (c == '\n') {
-      if (endOfLine( row, col ) && lastLine( row ))
-        lines += blankLine
-      else if (col == 0)
-        lines.insert( row, blankLine )
-      else {
-        find match {
-         case (run, 0) =>
-           lines.insert( row + 1, new Line(line.chars.slice(col, line.chars.length), line.runs.slice(run, line.runs.length)) )
-           line.chars.remove( col, line.chars.length - col )
-           line.runs.remove( run, line.runs.length - run )
-//         case (run, offset) =>
-        }
-      }
-
-      repaint( row, lines.length - 1 )
-    } else {
-      find match {
-        case (run, 0) =>
-          line.runs.insert( run, font.createGlyphVector(frc, c.toString) )
-         case (run, offset) =>
-          line.runs.insert( run + 1, font.createGlyphVector(frc, c.toString) )
-          line.runs.insert( run + 2, font.createGlyphVector(frc, line.chars.view(col, line.runs(run).getNumGlyphs - offset).toArray) )
-          line.runs(run) = font.createGlyphVector( frc, line.chars.view(col - offset, col).toArray )
-      }
-
-      repaint( row, row )
+    repaint( row, row )
 //      Extract( row, col, line.runs.view(insertion, line.runs.length).toList )
-    }
   }
 
   def overwrite( c: Char, row: Int, col: Int ): Unit = {

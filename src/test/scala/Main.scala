@@ -10,8 +10,8 @@ object Main extends App {
   val buf = new TextBuffer( new Font("Monospaced", Font.PLAIN, 14), new FontRenderContext(new AffineTransform(), true, true) )
 
   buf.show
-  buf.insert( 'a', 0, 0 )
-  buf.insert( 'b', 0, 1 )
+  buf.insertGlyphs( 'a', 0, 0 )
+  buf.insertGlyphs( 'b', 0, 1 )
   buf.show
 
 }
