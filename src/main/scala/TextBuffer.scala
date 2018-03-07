@@ -164,7 +164,13 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
   }
 
   def delete( pos: Pos ): Unit = {
+    if (endOfLine( pos )) {
+      if (!lastLine( pos )) {
 
+      }
+    } else {
+
+    }
   }
 
   def left( pos: Pos ): Option[Pos] =
