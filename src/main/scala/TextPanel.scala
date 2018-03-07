@@ -20,40 +20,73 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
     (bounds.getWidth, bounds.getHeight, -bounds.getY)
     }
   var showcursor = true
+  var horizontal = false
   val blink = new Timer( 500, ActionListener(_ => {showcursor = !showcursor; repaint}) )//todo: restart timer and turn on curson whenever buffer is mutated
   var curpos = Pos( 0, 0 )
-  var selection: Option[Pos] = None
+  var start = Pos( 0, 0 )
+  var end = Pos( 0, 0 )
+  var selection = false
 
   buffer addView this
   blink.start
 
   preferredSize = ((width*cols).toInt, (height*rows).toInt)
-  background = BLACK
+  background = DARK_GRAY
   foreground = LIGHT_GRAY
   peer.setFocusTraversalKeysEnabled( false )
   listenTo( keys )
 
   reactions += {
+    case KeyPressed( _, _, _, _ ) =>
+      blink.restart
+      showcursor = true
+      repaint
+  }
+
+  reactions += {
+    case KeyTyped( _, '\u001B', _, _ ) =>
+    case KeyTyped( _, '\u007F', _, _ ) =>
+      if (selection) {
+
+      } else
+        buffer.delete( curpos )
     case KeyTyped( _, '\n', _, _ ) => curpos = buffer.newline( curpos )
     case KeyTyped( _, '\b', _, _ ) => buffer.backspace( curpos ) foreach (curpos = _)
     case KeyTyped( _, '\t', _, _ ) => curpos = buffer.tab( curpos )
     case KeyTyped( _, c, _, _ ) => curpos = buffer.insertGlyphs( c.toString, curpos )
-    case KeyPressed( _, Key.Right, m, _ ) =>
-      if (m == Key.Modifier.Shift) {
-        if (selection isEmpty)
-          selection = Some( curpos )
+    case KeyPressed( _, Key.Left, m, _ ) =>
+      if (m == 0)
+        selection = false
+
+      buffer.left( curpos ) foreach (curpos = _)
+
+      if (m == Key.Modifier.Shift && !selection) {
+        start = curpos
+        selection = true
       }
 
-      buffer.right( curpos ) foreach (curpos = _)
+      if (m == Key.Modifier.Shift && selection)
+        end = curpos
 
-     repaint
-    case KeyPressed( _, Key.Left, _, _ ) =>
-      buffer.left( curpos ) foreach (curpos = _)
       repaint
-    case KeyPressed( _, Key.Up, _, _ ) =>
+    case KeyPressed( _, Key.Right, m, _ ) =>
+      if (m == 0)
+        selection = false
+
+      if (m == Key.Modifier.Shift && !selection) {
+        start = curpos
+        selection = true
+      }
+
+      if (m == Key.Modifier.Shift && selection && buffer.right( curpos ).nonEmpty)
+        end = curpos
+
+      buffer.right( curpos ) foreach (curpos = _)
+      repaint
+    case KeyPressed( _, Key.Up, m, _ ) =>
       buffer.up( curpos ) foreach (curpos = _)
       repaint
-    case KeyPressed( _, Key.Down, _, _ ) =>
+    case KeyPressed( _, Key.Down, m, _ ) =>
       buffer.down( curpos ) foreach (curpos = _)
       repaint
     case KeyPressed( _, Key.Delete, _, _ ) =>
@@ -70,14 +103,12 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
 
     val extract = buffer.extract( 0, buffer.rows min 25 )
 
-    selection foreach { s =>
+    if (selection) {
       def box( row: Int, from: Int, to: Int ): Unit = {
-        val y = row*height
-
-        g fill new Rectangle2D.Double( from*width, y, (to - from + 1)*width, height )
+        g fill new Rectangle2D.Double( from*width, row*height, (to - from + 1)*width, height )
       }
 
-      val (from, to) = if (curpos <= s) (curpos, s) else (s, curpos)
+      val (from, to) = if (start <= end) (start, end) else (end, start)
       val c = g.getColor
 
       g setColor BLUE
@@ -85,7 +116,11 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
       if (from.row == to.row)
         box( from.row, from.col, to.col )
       else {
-        box( from.row, from.col, extract.rows(from.row)._1 - 1 )
+        box( from.row, from.col, extract.rows(from.row)._1 )
+        box( to.row, 0, to.col )
+
+        for (r <- from.row + 1 until to.row)
+          box( r, 0, extract.rows(r)._1)
       }
 
       g setColor c
@@ -105,12 +140,19 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
     }
 
     val x = curpos.col*width
-    val y = curpos.row*height + ascent + 2
 
-    if (showcursor) {
-      g.setStroke( new BasicStroke(3) )
-      g.draw( new Line2D.Double(x, y, x + width, y) )
-    }
+    if (showcursor)
+      if (horizontal) {
+        val y = curpos.row*height
+
+        g.setStroke( new BasicStroke(2.5F) )
+        g.draw( new Line2D.Double(x, y, x, y + height) )
+      } else {
+        val y = curpos.row*height + ascent + 2
+
+        g.setStroke( new BasicStroke(3) )
+        g.draw( new Line2D.Double(x, y, x + width, y) )
+      }
   }
 
 }
