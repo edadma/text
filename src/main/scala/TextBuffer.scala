@@ -55,6 +55,22 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     (row, col)
   }
 
+  private def find( pos: Pos ): (Int, Int) = {
+    var count = 0
+    val runs = lines(pos.row).runs.length
+
+    for (i <- 0 until runs) {
+      val len = lines(pos.row).runs(i).getNumGlyphs
+
+      if (count <= pos.col && pos.col < count + len)
+        return (i, pos.col - count)
+      else
+        count += len
+    }
+
+    (runs, 0)
+  }
+
   def startOfLine( pos: Pos ) = pos.col == 0
 
   def endOfLine( pos: Pos ) = pos.col == lines(pos.row).chars.length
@@ -120,12 +136,13 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     else if (col == 0)
       lines.insert( row, blankLine )
     else {
-      find( row, col ) match {
+      find( pos ) match {
        case (run, 0) =>
          lines.insert( row + 1, new Line(line.chars.slice(col, line.chars.length), line.runs.slice(run, line.runs.length)) )
          line.chars.remove( col, line.chars.length - col )
          line.runs.remove( run, line.runs.length - run )
-//         case (run, offset) =>
+       case (run, offset) =>
+          sys.error( "not yet" )
       }
     }
 
@@ -133,27 +150,11 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     Pos( row + 1, 0 )
   }
 
-  def find( row: Int, col: Int ): (Int, Int) = {
-    var count = 0
-    val runs = lines(row).runs.length
-
-    for (i <- 0 until runs) {
-      val len = lines(row).runs(i).getNumGlyphs
-
-      if (count <= col && col < count + len)
-        return (i, col - count)
-      else
-        count += len
-    }
-
-    (runs, 0)
-  }
-
   def insertGlyphs( s: String, pos: Pos ): Pos = {
     val (row, col) = check( pos )
     val line = lines(row)
 
-    find( row, col ) match {
+    find( pos ) match {
       case (run, 0) =>
         line.runs.insert( run, font.createGlyphVector(frc, s) )
       case (run, offset) =>
@@ -174,15 +175,30 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
   def check( from: Pos, to: Pos ): Unit =
     require( if (from.row == to.row) from.col <= to.col else from.row <= to.row, s"$from is not before $to" )
 
-  def delete( pos: Pos ) = delete( pos, pos )
+  def delete( pos: Pos ): Unit = delete( pos, pos )
+
+  def removeLeftRun( row: Int, run: Int, offset: Int ): Unit = {
+
+  }
 
   def delete( from: Pos, to: Pos ): Unit = {
     check( from, to )
 
     if (!endOfDocument( from )) {
-      val to1 = if (endOfDocument( to )) left( to ) else to
+      val to1 = if (endOfDocument( to )) left( to ).get else to
 
+      if (from.row == to1.row) {
+        val (fr, fo) = find( from )
+        val (tr, to) = find( to1 )
 
+        if (fr == tr) {
+
+        } else {
+          sys.error( "not yet" )
+        }
+      } else {
+        sys.error( "not yet" )
+      }
     }
   }
 
