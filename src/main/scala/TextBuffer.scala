@@ -128,7 +128,6 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   def newline( pos: Pos ): Pos = {
     val (row, col) = check( pos )
-
     val line = lines(row)
 
     if (endOfDocument( pos ))
@@ -177,8 +176,24 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   def delete( pos: Pos ): Unit = delete( pos, pos )
 
-  def removeLeftRun( row: Int, run: Int, offset: Int ): Unit = {
+  def removeLeftRun( from: Pos, run: Int, offset: Int ): Unit = {
+    lines(from.row).runs(run) = lines(from.row).runs(run).getFont.createGlyphVector( frc, lines(from.row).chars.view(from.col, from.col + offset).toArray )
+    lines(from.row).chars.remove( from.col, offset )
+  }
 
+  def removeMidRun( from: Pos, run: Int, offset: Int, len: Int ): Unit = {
+    lines(from.row).runs(run) = lines(from.row).runs(run).getFont.createGlyphVector( frc, (lines(from.row).chars.view(from.col, from.col + offset) ++ lines(from.row).chars.view(from.col + offset + len, from.col + lines(from.row).runs(run).getNumGlyphs)).toArray )
+    lines(from.row).chars.remove( from.col + offset, len )
+  }
+
+  def removeRightRun( from: Pos, run: Int, offset: Int ): Unit = {
+    lines(from.row).runs(run) = lines(from.row).runs(run).getFont.createGlyphVector( frc, lines(from.row).chars.view(from.col + offset, from.col + lines(from.row).runs(run).getNumGlyphs).toArray )
+    lines(from.row).chars.remove( from.col + offset, lines(from.row).runs(run).getNumGlyphs - offset )
+  }
+
+  def removeRun( from: Pos, run: Int ): Unit = {
+    lines(from.row).chars.remove( from.col, lines(from.row).runs(run).getNumGlyphs )
+    lines(from.row).runs.remove( run )
   }
 
   def delete( from: Pos, to: Pos ): Unit = {
@@ -188,11 +203,19 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
       val to1 = if (endOfDocument( to )) left( to ).get else to
 
       if (from.row == to1.row) {
-        val (fr, fo) = find( from )
-        val (tr, to) = find( to1 )
+        val line = lines(from.row)
+        val (frun, foff) = find( from )
+        val (trun, toff) = find( to1 )
 
-        if (fr == tr) {
-
+        if (frun == trun) {
+          if (foff == 0 && toff == line.runs(trun).getNumGlyphs - 1)
+            removeRun( from, frun )
+          else if (foff == 0)
+            removeLeftRun( from, frun, toff )
+          else if (toff == line.runs(trun).getNumGlyphs - 1)
+            removeRightRun( from, frun, foff )
+          else
+            removeMidRun( from, frun, foff, toff - foff + 1 )
         } else {
           sys.error( "not yet" )
         }
