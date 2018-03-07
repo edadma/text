@@ -2,8 +2,10 @@
 package xyz.hyperreal.text
 
 import java.awt.Color._
-import java.awt.RenderingHints
+import java.awt.{BasicStroke, RenderingHints}
 import java.awt.geom.Line2D
+
+import javax.swing.Timer
 
 import scala.swing.{Graphics2D, Panel}
 import scala.swing.Swing._
@@ -13,14 +15,17 @@ import scala.swing.event.{Key, KeyPressed, KeyTyped}
 class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
 
   val (width, height) = {
-    val x = buffer.font.createGlyphVector( buffer.frc, "X" )
+    val bounds = buffer.font.createGlyphVector( buffer.frc, "[" ).getLogicalBounds
 
-    (x.getLogicalBounds.getWidth, x.getLogicalBounds.getHeight)
-  }
-
+    println( bounds )
+    (bounds.getWidth, bounds.getHeight)
+    }
+  var showcursor = true
+  val blink = new Timer( 500, ActionListener(_ => {showcursor = !showcursor; repaint}) )//todo: restart timer and turn on curson whenever buffer is mutated
   var curpos = Pos( 0, 0 )
 
   buffer addView this
+  blink.start
 
   preferredSize = ((width*cols).toInt, (height*rows).toInt)
   background = BLACK
@@ -73,9 +78,12 @@ class TextPanel( rows: Int, cols: Int, buffer: TextBuffer ) extends Panel {
     }
 
     val x = curpos.col*width
-    val y = curpos.row*height + height
+    val y = curpos.row*height + height + 2
 
-    g.draw( new Line2D.Double(x, y, x + width, y) )
+    if (showcursor) {
+      g.setStroke( new BasicStroke(3) )
+      g.draw( new Line2D.Double(x, y, x + width, y) )
+    }
   }
 
 }
