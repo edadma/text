@@ -4,7 +4,6 @@ package xyz.hyperreal.text
 import java.awt.Color._
 import java.awt.{BasicStroke, RenderingHints}
 import java.awt.geom.{Line2D, Rectangle2D}
-
 import javax.swing.Timer
 
 import scala.swing.{Graphics2D, Panel}
@@ -14,7 +13,7 @@ import scala.swing.event.{Key, KeyPressed, KeyTyped}
 
 class TextPanel( cols: Int, rows: Int, buffer: TextBuffer ) extends Panel {
 
-  val drawboxes = true
+  val drawboxes = false
   val (width, height, ascent) = {
     val bounds = buffer.font.createGlyphVector( buffer.frc, "X" ).getLogicalBounds
 

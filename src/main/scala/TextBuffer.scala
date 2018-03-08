@@ -192,48 +192,63 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   def delete( pos: Pos ): Unit = delete( pos, pos )
 
-  def removeLeftRun( from: Pos, run: Int, offset: Int ): Unit = {
-    lines(from.row).runs(run) = lines(from.row).runs(run).getFont.createGlyphVector( frc,
-      lines(from.row).chars.view(from.col + offset + 1, from.col + lines(from.row).runs(run).getNumGlyphs).toArray )
-    lines(from.row).chars.remove( from.col, offset + 1 )
-  }
-
-  def removeMidRun( from: Pos, run: Int, offset: Int, len: Int ): Unit = {
-    lines(from.row).runs(run) = lines(from.row).runs(run).getFont.createGlyphVector( frc,
-      (lines(from.row).chars.view(from.col - offset, from.col) ++
-        lines(from.row).chars.view(from.col + len, from.col + lines(from.row).runs(run).getNumGlyphs)).toArray )
-    lines(from.row).chars.remove( from.col, len )
-  }
-
-  def removeRightRun( from: Pos, run: Int, offset: Int ): Unit = {
-    lines(from.row).chars.remove( from.col, lines(from.row).runs(run).getNumGlyphs - offset )
-    lines(from.row).runs(run) = lines(from.row).runs(run).getFont.createGlyphVector( frc,
-      lines(from.row).chars.view(from.col - offset, from.col).toArray )
-  }
-
-  def removeRun( from: Pos, run: Int ): Unit = {
-    lines(from.row).chars.remove( from.col, lines(from.row).runs(run).getNumGlyphs )
-    lines(from.row).runs.remove( run )
-  }
-
-  def removeRuns( from: Pos, frun: Int, foff: Int, to: Pos, trun: Int, toff: Int ): Unit = {
+  private def removeLeftRun( from: Pos, run: Int, offset: Int ): Unit = {
     val line = lines(from.row)
 
-    if (frun == trun) {
-      if (frun == line.runs.length) {
-        line.chars ++= lines(from.row + 1).chars
-        line.runs ++= lines(from.row + 1).runs
-        lines.remove( from.row + 1 )
-      } else if (foff == 0 && toff == line.runs(trun).getNumGlyphs - 1)
-        removeRun( from, frun )
-      else if (foff == 0)
-        removeLeftRun( from, trun, toff )
-      else if (toff == line.runs(trun).getNumGlyphs - 1)
-        removeRightRun( from, frun, foff )
-      else
-        removeMidRun( from, frun, foff, toff - foff + 1 )
-    } else {
+    line.runs(run) = line.runs(run).getFont.createGlyphVector( frc,
+      line.chars.view(from.col + offset + 1, from.col + line.runs(run).getNumGlyphs).toArray )
+    line.chars.remove( from.col, offset + 1 )
+  }
 
+  private def removeMidRun( from: Pos, run: Int, offset: Int, len: Int ): Unit = {
+    val line = lines(from.row)
+
+    line.runs(run) = line.runs(run).getFont.createGlyphVector( frc,
+      (line.chars.view(from.col - offset, from.col) ++
+        line.chars.view(from.col + len, from.col + line.runs(run).getNumGlyphs)).toArray )
+    line.chars.remove( from.col, len )
+  }
+
+  private def removeRightRun( from: Pos, run: Int, offset: Int ): Unit = {
+    val line = lines(from.row)
+
+    line.chars.remove( from.col, line.runs(run).getNumGlyphs - offset )
+    line.runs(run) = line.runs(run).getFont.createGlyphVector( frc,
+      line.chars.view(from.col - offset, from.col).toArray )
+  }
+
+  private def removeEntireRun( from: Pos, run: Int ): Unit = {
+    val line = lines(from.row)
+
+    line.chars.remove( from.col, line.runs(run).getNumGlyphs )
+    line.runs.remove( run )
+  }
+
+  private def removeRun( from: Pos, run: Int, foff: Int, toff: Int ): Unit = {
+    val line = lines(from.row)
+
+    if (run == line.runs.length) {
+      line.chars ++= lines(from.row + 1).chars
+      line.runs ++= lines(from.row + 1).runs
+      lines.remove( from.row + 1 )
+    } else if (foff == 0 && toff == line.runs(run).getNumGlyphs - 1)
+      removeEntireRun( from, run )
+    else if (foff == 0)
+      removeLeftRun( from, run, toff )
+    else if (toff == line.runs(run).getNumGlyphs - 1)
+      removeRightRun( from, run, foff )
+    else
+      removeMidRun( from, run, foff, toff - foff + 1 )
+  }
+
+  private def removeRuns( from: Pos, frun: Int, foff: Int, to: Pos, trun: Int, toff: Int ): Unit = {
+    val line = lines(from.row)
+
+    if (frun == trun)
+      removeRun( from, frun, foff, toff )
+    else {
+      removeRuns( from + line.runs(frun).getNumGlyphs - foff, frun + 1, 0, to, trun, toff )
+      removeRun( from, frun, foff, line.runs(frun).getNumGlyphs - 1 )
     }
   }
 
@@ -242,30 +257,22 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
     if (!endOfDocument( from )) {
       val to1 = if (endOfDocument( to )) left( to ).get else to
+      val (frun, foff) = find( from )
+      val (trun, toff) = find( to1 )
 
       if (from.row == to1.row) {
-        val line = lines(from.row)
-        val (frun, foff) = find( from )
-        val (trun, toff) = find( to1 )
-
-        if (frun == trun) {
-          if (frun == line.runs.length) {
-            line.chars ++= lines(from.row + 1).chars
-            line.runs ++= lines(from.row + 1).runs
-            lines.remove( from.row + 1 )
-          } else if (foff == 0 && toff == line.runs(trun).getNumGlyphs - 1)
-            removeRun( from, frun )
-          else if (foff == 0)
-            removeLeftRun( from, trun, toff )
-          else if (toff == line.runs(trun).getNumGlyphs - 1)
-            removeRightRun( from, frun, foff )
-          else
-            removeMidRun( from, frun, foff, toff - foff + 1 )
-        } else {
+        if (frun == trun)
+          removeRun( from, frun, foff, toff )
+        else
           removeRuns( from, frun, foff, to1, trun, toff )
-        }
       } else {
-        sys.error( "not yet" )
+        val line = lines(from.row)
+        val lrun = line.runs.length - 1
+
+        removeRuns( from, frun, foff, Pos(from.row, lines(from.row).chars.length - 1), lrun, line.runs(lrun).getNumGlyphs - 1 )
+        removeRuns( Pos(to1.row, 0), 0, 0, to1, trun, toff )
+        lines.remove( from.row + 1, to1.row - from.row - 1 )
+        delete( from, from )
       }
     }
 
@@ -318,6 +325,8 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
 case class Pos( row: Int, col: Int ) {
   def <=( pos: Pos ) = row < pos.row  || row == pos.row && col <= pos.col
+  def +( a: Int ) = Pos( row, col + a )
+  def -( a: Int ) = Pos( row, col - a )
 }
 
 case class Extract( row: Int, rows: Vector[(Int, List[GlyphVector])] )
