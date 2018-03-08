@@ -28,7 +28,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   lines += blankLine
 
-  private class Line( val chars: ArrayBuffer[Char]/*, styles: ArrayBuffer[Style]*/, val runs: ArrayBuffer[GlyphVector] )
+  private case class Line( chars: ArrayBuffer[Char]/*, styles: ArrayBuffer[Style]*/, runs: ArrayBuffer[GlyphVector] )
 
   private case class Style( length: Int, color: Color, italic: Boolean, bold: Boolean, underline: Boolean, blink: Boolean )
 
@@ -43,7 +43,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   def rows = lines.length
 
-  private def blankLine = new Line( new ArrayBuffer[Char], new ArrayBuffer[GlyphVector] )
+  private def blankLine = Line( new ArrayBuffer[Char], new ArrayBuffer[GlyphVector] )
 
   private def check( pos: Pos ): (Int, Int) = {
     val Pos( row, col ) = pos
@@ -73,6 +73,16 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     (runs, 0)
   }
 
+  private def separate( s: String, c: Char ) = {
+    def separate( from: Int, parts: Vector[String] ): Vector[String] =
+      s.indexOf( c, from ) match {
+        case -1 => parts :+ (s substring from)
+        case idx => separate( idx + 1, parts :+ s.substring( from, idx ) )
+      }
+
+    separate( 0, Vector() )
+  }
+
   def startOfLine( pos: Pos ) = pos.col == 0
 
   def endOfLine( pos: Pos ) = pos.col == lines(pos.row).chars.length
@@ -95,17 +105,9 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
       else
         p
 
-    insert( 0, pos )
-  }
-
-  def separate( s: String, c: Char ) = {
-    def separate( from: Int, parts: Vector[String] ): Vector[String] =
-      s.indexOf( c, from ) match {
-        case -1 => parts :+ (s substring from)
-        case idx => separate( idx + 1, parts :+ s.substring( from, idx ) )
-      }
-
-    separate( 0, Vector() )
+    val res = insert( 0, pos )
+    repaint( pos.row, res.row )
+    res
   }
 
   def insert( s: String, pos: Pos ): Pos = {
@@ -131,6 +133,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
         nextpos = newline( nextpos )
     }
 
+    repaint( pos.row, nextpos.row )
     nextpos
   }
 
@@ -142,6 +145,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
   }
 
   def newline( pos: Pos ): Pos = {
+    println( pos )
     val (row, col) = check( pos )
     val line = lines(row)
 
@@ -151,12 +155,19 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
       lines.insert( row, blankLine )
     else {
       find( pos ) match {
-       case (run, 0) =>
-         lines.insert( row + 1, new Line(line.chars.slice(col, line.chars.length), line.runs.slice(run, line.runs.length)) )
-         line.chars.remove( col, line.chars.length - col )
-         line.runs.remove( run, line.runs.length - run )
-       case (run, offset) =>
-          sys.error( "not yet" )
+        case (run, 0) =>
+          lines.insert( row + 1, Line(line.chars.slice(col, line.chars.length), line.runs.slice(run, line.runs.length)) )
+          line.chars.remove( col, line.chars.length - col )
+          line.runs.remove( run, line.runs.length - run )
+        case (run, offset) =>
+          lines.insert( row + 1,
+            Line(
+              line.chars.slice(col, line.chars.length),
+                line.runs(run).getFont.createGlyphVector(frc, line.chars.slice(col, col + line.runs(run).getNumGlyphs - offset).toArray) +:
+                  line.runs.slice(run + 1, line.runs.length)) )
+          line.runs(run) = line.runs(run).getFont.createGlyphVector( frc, line.chars.slice(col - offset, col).toArray )
+          line.chars.remove( col, line.chars.length - col )
+          line.runs.remove( run + 1, line.runs.length - run - 1 )
       }
     }
 
@@ -295,3 +306,4 @@ case class Pos( row: Int, col: Int ) {
 }
 
 case class Extract( row: Int, rows: Vector[(Int, List[GlyphVector])] )
+//todo: 4th eve part-time 5144832121 2237

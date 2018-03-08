@@ -18,7 +18,8 @@ object Main extends SimpleSwingApplication {
       val buffer = new TextBuffer( textfont, new FontRenderContext(null, true, true) )//todo: frc needs to be settable after TextBuffer has been instantiated .getFontMetrics(textfont).getFontRenderContext )
 			var p = Pos( 0, 0 )
 
-      buffer.insert( "asdf\nASDF", p )
+      p = buffer.insert( "abcd", p )
+      p = buffer.insert( "zxcv", p )
 //      buffer.insert( "a\tas\td\tf\t\t|\n123456789012345678901\n         111111111122", p )
 //      for (i <- 1 to 25) {
 //        p = buffer.insertEach( "a"*80, p )
