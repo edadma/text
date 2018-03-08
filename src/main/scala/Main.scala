@@ -9,9 +9,9 @@ import scala.swing.{MainFrame, SimpleSwingApplication}
 
 object Main extends SimpleSwingApplication {
 
-//  val textfont = new Font( "Monospaced", Font.PLAIN, 20 )
+  val textfont = new Font( "Monospaced", Font.PLAIN, 20 )
 //  val textfont = new Font( "DejaVu Sans Mono", Font.PLAIN, 20 )
-  val textfont = new Font( "FreeMono", Font.PLAIN, 20 )
+//  val textfont = new Font( "FreeMono", Font.PLAIN, 20 )
 
   def top =
     new MainFrame {

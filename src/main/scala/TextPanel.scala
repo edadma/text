@@ -136,7 +136,7 @@ class TextPanel( cols: Int, rows: Int, buffer: TextBuffer ) extends Panel {
         if (drawboxes)
           g draw new Rectangle2D.Double( width*colCount, height*rowCount, r.getNumGlyphs*width, height )
 
-        g.drawGlyphVector( r, (width*colCount).toFloat, (height*rowCount + ascent).toFloat )//todo: investigate compositing text with background to improved rendering thin diagonals (e.g. "z")
+        g.drawGlyphVector( r, (width*colCount).toFloat, (height*rowCount + ascent).toFloat )
         colCount += r.getNumGlyphs
       }
 
