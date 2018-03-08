@@ -83,15 +83,15 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     separate( 0, Vector() )
   }
 
-  def startOfLine( pos: Pos ) = pos.col == 0
+  private def startOfLine( pos: Pos ) = pos.col == 0
 
-  def endOfLine( pos: Pos ) = pos.col == lines(pos.row).chars.length
+  private def endOfLine( pos: Pos ) = pos.col == lines(pos.row).chars.length
 
-  def endOfDocument( pos: Pos ) = endOfLine( pos ) && lastLine( pos )
+  private def endOfDocument( pos: Pos ) = endOfLine( pos ) && lastLine( pos )
 
-  def firstLine( pos: Pos ) = pos.row == 0
+  private def firstLine( pos: Pos ) = pos.row == 0
 
-  def lastLine( pos: Pos ) = pos.row == lines.length - 1
+  private def lastLine( pos: Pos ) = pos.row == lines.length - 1
 
   def repaint( row1: Int, row2: Int ): Unit = {
     for (v <- views)
@@ -137,15 +137,9 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     nextpos
   }
 
-  def tab( pos: Pos ) = {
-    val res = glyphs( " "*(tabs - pos.col%tabs), pos )
+  private def tab( pos: Pos ) = glyphs( " "*(tabs - pos.col%tabs), pos )
 
-    repaint( pos.row, pos.row )
-    res
-  }
-
-  def newline( pos: Pos ): Pos = {
-    println( pos )
+  private def newline( pos: Pos ) = {
     val (row, col) = check( pos )
     val line = lines(row)
 
@@ -175,7 +169,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     Pos( row + 1, 0 )
   }
 
-  def glyphs( s: String, pos: Pos ): Pos = {
+  private def glyphs( s: String, pos: Pos ): Pos = {
     val (row, col) = check( pos )
     val line = lines(row)
 
@@ -222,6 +216,27 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     lines(from.row).runs.remove( run )
   }
 
+  def removeRuns( from: Pos, frun: Int, foff: Int, to: Pos, trun: Int, toff: Int ): Unit = {
+    val line = lines(from.row)
+
+    if (frun == trun) {
+      if (frun == line.runs.length) {
+        line.chars ++= lines(from.row + 1).chars
+        line.runs ++= lines(from.row + 1).runs
+        lines.remove( from.row + 1 )
+      } else if (foff == 0 && toff == line.runs(trun).getNumGlyphs - 1)
+        removeRun( from, frun )
+      else if (foff == 0)
+        removeLeftRun( from, trun, toff )
+      else if (toff == line.runs(trun).getNumGlyphs - 1)
+        removeRightRun( from, frun, foff )
+      else
+        removeMidRun( from, frun, foff, toff - foff + 1 )
+    } else {
+
+    }
+  }
+
   def delete( from: Pos, to: Pos ): Unit = {
     check( from, to )
 
@@ -241,13 +256,13 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
           } else if (foff == 0 && toff == line.runs(trun).getNumGlyphs - 1)
             removeRun( from, frun )
           else if (foff == 0)
-            removeLeftRun( from, frun, toff )
+            removeLeftRun( from, trun, toff )
           else if (toff == line.runs(trun).getNumGlyphs - 1)
             removeRightRun( from, frun, foff )
           else
             removeMidRun( from, frun, foff, toff - foff + 1 )
         } else {
-
+          removeRuns( from, frun, foff, to1, trun, toff )
         }
       } else {
         sys.error( "not yet" )
