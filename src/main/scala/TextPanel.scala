@@ -47,7 +47,9 @@ class TextPanel( cols: Int, rows: Int, buffer: TextBuffer ) extends Panel {
     case KeyTyped( _, '\u001B', _, _ ) =>
     case KeyTyped( _, '\u007F', _, _ ) =>
       if (selection) {
-
+        buffer.delete( start, end )
+        selection = false
+        curpos = start
       } else
         buffer.delete( curpos )
     case KeyTyped( _, '\n', _, _ ) => curpos = buffer.newline( curpos )
@@ -89,8 +91,6 @@ class TextPanel( cols: Int, rows: Int, buffer: TextBuffer ) extends Panel {
     case KeyPressed( _, Key.Down, m, _ ) =>
       buffer.down( curpos ) foreach (curpos = _)
       repaint
-    case KeyPressed( _, Key.Delete, _, _ ) =>
-      buffer.delete( curpos )
    }
 
   focusable = true

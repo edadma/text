@@ -176,18 +176,22 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
   def delete( pos: Pos ): Unit = delete( pos, pos )
 
   def removeLeftRun( from: Pos, run: Int, offset: Int ): Unit = {
-    lines(from.row).runs(run) = lines(from.row).runs(run).getFont.createGlyphVector( frc, lines(from.row).chars.view(from.col, from.col + offset).toArray )
-    lines(from.row).chars.remove( from.col, offset )
+    lines(from.row).runs(run) = lines(from.row).runs(run).getFont.createGlyphVector( frc,
+      lines(from.row).chars.view(from.col + offset + 1, from.col + lines(from.row).runs(run).getNumGlyphs).toArray )
+    lines(from.row).chars.remove( from.col, offset + 1 )
   }
 
   def removeMidRun( from: Pos, run: Int, offset: Int, len: Int ): Unit = {
-    lines(from.row).runs(run) = lines(from.row).runs(run).getFont.createGlyphVector( frc, (lines(from.row).chars.view(from.col, from.col + offset) ++ lines(from.row).chars.view(from.col + offset + len, from.col + lines(from.row).runs(run).getNumGlyphs)).toArray )
-    lines(from.row).chars.remove( from.col + offset, len )
+    lines(from.row).runs(run) = lines(from.row).runs(run).getFont.createGlyphVector( frc,
+      (lines(from.row).chars.view(from.col - offset, from.col) ++
+        lines(from.row).chars.view(from.col + len, from.col + lines(from.row).runs(run).getNumGlyphs)).toArray )
+    lines(from.row).chars.remove( from.col, len )
   }
 
   def removeRightRun( from: Pos, run: Int, offset: Int ): Unit = {
-    lines(from.row).runs(run) = lines(from.row).runs(run).getFont.createGlyphVector( frc, lines(from.row).chars.view(from.col + offset, from.col + lines(from.row).runs(run).getNumGlyphs).toArray )
-    lines(from.row).chars.remove( from.col + offset, lines(from.row).runs(run).getNumGlyphs - offset )
+    lines(from.row).chars.remove( from.col, lines(from.row).runs(run).getNumGlyphs - offset )
+    lines(from.row).runs(run) = lines(from.row).runs(run).getFont.createGlyphVector( frc,
+      lines(from.row).chars.view(from.col - offset, from.col).toArray )
   }
 
   def removeRun( from: Pos, run: Int ): Unit = {
@@ -222,6 +226,8 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
         sys.error( "not yet" )
       }
     }
+
+    repaint( from.row, to.row )
   }
 
   def left( pos: Pos ): Option[Pos] =
