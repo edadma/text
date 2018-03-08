@@ -19,6 +19,7 @@ object Main extends SimpleSwingApplication {
 			var p = Pos( 0, 0 )
 
       buffer.insert( "asdf\nASDF", p )
+//      buffer.insert( "a\tas\td\tf\t\t|\n123456789012345678901\n         111111111122", p )
 //      for (i <- 1 to 25) {
 //        p = buffer.insertEach( "a"*80, p )
 //

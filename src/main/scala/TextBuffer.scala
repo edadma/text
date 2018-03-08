@@ -89,35 +89,43 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
   }
 
   def insertEach( s: String, pos: Pos ): Pos = {
-    def _insert( idx: Int, p: Pos ): Pos =
+    def insert( idx: Int, p: Pos ): Pos =
       if (idx < s.length)
-        _insert( idx + 1, insertGlyphs(s(idx).toString, p) )
+        insert( idx + 1, glyphs(s(idx).toString, p) )
       else
         p
 
-    _insert( 0, pos )
+    insert( 0, pos )
+  }
+
+  def separate( s: String, c: Char ) = {
+    def separate( from: Int, parts: Vector[String] ): Vector[String] =
+      s.indexOf( c, from ) match {
+        case -1 => parts :+ (s substring from)
+        case idx => separate( idx + 1, parts :+ s.substring( from, idx ) )
+      }
+
+    separate( 0, Vector() )
   }
 
   def insert( s: String, pos: Pos ): Pos = {
     check( pos )
 
-    val parts = new ArrayBuffer[String]
-
-    def separate( from: Int ): Unit =
-      s indexOf ('\n', from) match {
-        case -1 => parts += s substring from
-        case idx =>
-          parts += s.substring( from, idx )
-          separate( idx + 1 )
-      }
-
-    separate( 0 )
-
+    val parts = separate( s, '\n' )
     var nextpos = pos
 
     for (i <- parts.indices) {
-      if (parts(i) nonEmpty)
-        nextpos = insertGlyphs( parts(i), nextpos )
+      if (parts(i) nonEmpty) {
+        val subparts = separate( parts(i), '\t' )
+
+        for (j <- subparts.indices) {
+          if (subparts nonEmpty)
+            nextpos = glyphs( subparts(j), nextpos )
+
+          if (j < subparts.length - 1)
+            nextpos = tab( nextpos )
+        }
+      }
 
       if (i < parts.length - 1)
         nextpos = newline( nextpos )
@@ -126,7 +134,12 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     nextpos
   }
 
-  def tab( pos: Pos ) = insertGlyphs( " "*(tabs - pos.col%tabs), pos )
+  def tab( pos: Pos ) = {
+    val res = glyphs( " "*(tabs - pos.col%tabs), pos )
+
+    repaint( pos.row, pos.row )
+    res
+  }
 
   def newline( pos: Pos ): Pos = {
     val (row, col) = check( pos )
@@ -151,7 +164,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     Pos( row + 1, 0 )
   }
 
-  def insertGlyphs( s: String, pos: Pos ): Pos = {
+  def glyphs( s: String, pos: Pos ): Pos = {
     val (row, col) = check( pos )
     val line = lines(row)
 
@@ -165,7 +178,6 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     }
 
     line.chars.insertAll( col, s )
-    repaint( row, row )
     Pos( row, col + s.length )
   }
 
@@ -211,7 +223,11 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
         val (trun, toff) = find( to1 )
 
         if (frun == trun) {
-          if (foff == 0 && toff == line.runs(trun).getNumGlyphs - 1)
+          if (frun == line.runs.length) {
+            line.chars ++= lines(from.row + 1).chars
+            line.runs ++= lines(from.row + 1).runs
+            lines.remove( from.row + 1 )
+          } else if (foff == 0 && toff == line.runs(trun).getNumGlyphs - 1)
             removeRun( from, frun )
           else if (foff == 0)
             removeLeftRun( from, frun, toff )
@@ -220,7 +236,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
           else
             removeMidRun( from, frun, foff, toff - foff + 1 )
         } else {
-          sys.error( "not yet" )
+
         }
       } else {
         sys.error( "not yet" )

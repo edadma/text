@@ -55,7 +55,7 @@ class TextPanel( cols: Int, rows: Int, buffer: TextBuffer ) extends Panel {
     case KeyTyped( _, '\n', _, _ ) => curpos = buffer.newline( curpos )
     case KeyTyped( _, '\b', _, _ ) => buffer.backspace( curpos ) foreach (curpos = _)
     case KeyTyped( _, '\t', _, _ ) => curpos = buffer.tab( curpos )
-    case KeyTyped( _, c, _, _ ) => curpos = buffer.insertGlyphs( c.toString, curpos )
+    case KeyTyped( _, c, _, _ ) => curpos = buffer.glyphs( c.toString, curpos )
     case KeyPressed( _, Key.Left, m, _ ) =>
       if (m == 0)
         selection = false
