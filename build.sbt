@@ -8,6 +8,8 @@ scalaVersion := "2.12.8"
 
 scalacOptions ++= Seq( "-deprecation", "-feature", "-unchecked", "-language:postfixOps", "-language:implicitConversions", "-language:existentials" )
 
+Compile / run / fork := true
+
 organization := "xyz.hyperreal"
 
 //resolvers += Resolver.sonatypeRepo( "snapshots" )
@@ -24,7 +26,7 @@ libraryDependencies ++= Seq(
 libraryDependencies ++= Seq(
 //	"org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.6",
 //	"org.scala-lang.modules" %% "scala-xml" % "1.1.0"
-	"org.scala-lang.modules" %% "scala-swing" % "2.0.2"
+	"org.scala-lang.modules" %% "scala-swing" % "2.1.0"
 )
 
 //libraryDependencies ++= Seq(

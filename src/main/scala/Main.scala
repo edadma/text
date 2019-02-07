@@ -4,6 +4,7 @@ package xyz.hyperreal.text
 import java.awt.font.FontRenderContext
 import java.awt.Font
 
+import scala.swing.event.WindowClosing
 import scala.swing.{MainFrame, SimpleSwingApplication}
 
 
@@ -15,6 +16,18 @@ object Main extends SimpleSwingApplication {
 
   def top =
     new MainFrame {
+      peer.setDefaultCloseOperation( javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE )
+
+      override def closeOperation: Unit = {
+        quit
+      }
+
+//      reactions += {
+//        case WindowClosing(_) =>
+//          println(123)
+//          sys.exit
+//      }
+
       val buffer = new TextBuffer( textfont, new FontRenderContext(null, true, true) )//todo: frc needs to be settable after TextBuffer has been instantiated .getFontMetrics(textfont).getFontRenderContext )
 			var p = Pos( 0, 0 )
 
