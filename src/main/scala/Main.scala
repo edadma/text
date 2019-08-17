@@ -5,7 +5,7 @@ import java.awt.font.FontRenderContext
 import java.awt.Font
 
 import scala.swing.event.WindowClosing
-import scala.swing.{MainFrame, SimpleSwingApplication}
+import scala.swing.{MainFrame, ScrollPane, SimpleSwingApplication}
 
 
 object Main extends SimpleSwingApplication {
@@ -22,12 +22,6 @@ object Main extends SimpleSwingApplication {
         quit
       }
 
-//      reactions += {
-//        case WindowClosing(_) =>
-//          println(123)
-//          sys.exit
-//      }
-
       val buffer = new TextBuffer( textfont, new FontRenderContext(null, true, true) )//todo: frc needs to be settable after TextBuffer has been instantiated .getFontMetrics(textfont).getFontRenderContext )
 			var p = Pos( 0, 0 )
 
@@ -43,7 +37,7 @@ object Main extends SimpleSwingApplication {
 //      }
 
       title = "Simple Text Editor"
-      contents = new TextPanel( 80, 25, buffer )
+      contents = new ScrollPane(new TextPanel( 80, 25, buffer ) )
     }
 
 }

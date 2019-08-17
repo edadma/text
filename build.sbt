@@ -1,10 +1,8 @@
 name := "text"
 
-version := "0.1"
+version := "0.2"
 
-scalaVersion := "2.12.8"
-
-//crossScalaVersions := Seq( "2.11.11" )
+scalaVersion := "2.13.0"
 
 scalacOptions ++= Seq( "-deprecation", "-feature", "-unchecked", "-language:postfixOps", "-language:implicitConversions", "-language:existentials" )
 
@@ -19,40 +17,19 @@ resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/release
 resolvers += "Hyperreal Repository" at "https://dl.bintray.com/edadma/maven"
 
 libraryDependencies ++= Seq(
-	"org.scalatest" %% "scalatest" % "3.0.0" % "test",
-	"org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
+	"org.scalatest" %% "scalatest" % "3.0.8" % "test",
+	"org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 )
 
 libraryDependencies ++= Seq(
 //	"org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.6",
 //	"org.scala-lang.modules" %% "scala-xml" % "1.1.0"
-	"org.scala-lang.modules" %% "scala-swing" % "2.1.0"
+	"org.scala-lang.modules" %% "scala-swing" % "2.1.1"
 )
 
 //libraryDependencies ++= Seq(
 //  "com.typesafe" % "config" % "1.3.1"
 //)
-
-libraryDependencies ++= {
-	val akkaV = "2.5.11"
-	Seq(
-		"com.typesafe.akka" %% "akka-actor"    % akkaV
-	)
-}
-
-//libraryDependencies ++= {
-//	val akka_http = "10.0.11"
-//	Seq(
-//		"com.typesafe.akka" %% "akka-http-core"       % akka_http,
-//		"com.typesafe.akka" %% "akka-http"            % akka_http,
-//		"com.typesafe.akka" %% "akka-http-testkit"    % akka_http,
-//		"com.typesafe.akka" %% "akka-http-spray-json" % akka_http,
-//		"com.typesafe.akka" %% "akka-http-jackson"    % akka_http
-//	)
-//}
-
-libraryDependencies ++= Seq(
-)
 
 mainClass in (Compile, run) := Some( "xyz.hyperreal." + name.value.replace('-', '_') + ".Main" )
 

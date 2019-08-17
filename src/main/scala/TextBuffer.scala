@@ -5,6 +5,7 @@ import java.awt.{Color, Font}
 import java.awt.font.{FontRenderContext, GlyphVector}
 
 import collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 
 class TextBuffer( val font: Font, val frc: FontRenderContext ) {
@@ -28,9 +29,13 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   lines += blankLine
 
-  private case class Line( chars: ArrayBuffer[Char]/*, styles: ArrayBuffer[Style]*/, runs: ArrayBuffer[GlyphVector] )
+  private case class Line(chars: ArrayBuffer[Char], styles: mutable.HashSet[Style], runs: ArrayBuffer[GlyphVector] )
 
-  private case class Style( length: Int, color: Color, italic: Boolean, bold: Boolean, underline: Boolean, blink: Boolean )
+  abstract class Style {
+    val name: Symbol
+  }
+
+//  private case class Style( length: Int, color: Color, italic: Boolean, bold: Boolean, underline: Boolean, blink: Boolean )
 
   def show: Unit = {
 
@@ -43,7 +48,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   def rows = lines.length
 
-  private def blankLine = Line( new ArrayBuffer[Char], new ArrayBuffer[GlyphVector] )
+  private def blankLine = Line( new ArrayBuffer[Char], mutable.HashSet(), new ArrayBuffer[GlyphVector] )
 
   private def check( pos: Pos ): (Int, Int) = {
     val Pos( row, col ) = pos
@@ -150,13 +155,13 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     else {
       find( pos ) match {
         case (run, 0) =>
-          lines.insert( row + 1, Line(line.chars.slice(col, line.chars.length), line.runs.slice(run, line.runs.length)) )
+          lines.insert( row + 1, Line(line.chars.slice(col, line.chars.length), mutable.HashSet(), line.runs.slice(run, line.runs.length)) )
           line.chars.remove( col, line.chars.length - col )
           line.runs.remove( run, line.runs.length - run )
         case (run, offset) =>
           lines.insert( row + 1,
             Line(
-              line.chars.slice(col, line.chars.length),
+              line.chars.slice(col, line.chars.length), mutable.HashSet(),
                 line.runs(run).getFont.createGlyphVector(frc, line.chars.slice(col, col + line.runs(run).getNumGlyphs - offset).toArray) +:
                   line.runs.slice(run + 1, line.runs.length)) )
           line.runs(run) = line.runs(run).getFont.createGlyphVector( frc, line.chars.slice(col - offset, col).toArray )
@@ -178,8 +183,8 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
         line.runs.insert( run, font.createGlyphVector(frc, s) )
       case (run, offset) =>
         line.runs.insert( run + 1, font.createGlyphVector(frc, s) )
-        line.runs.insert( run + 2, font.createGlyphVector(frc, line.chars.view(col, col + line.runs(run).getNumGlyphs - offset).toArray) )
-        line.runs(run) = font.createGlyphVector( frc, line.chars.view(col - offset, col).toArray )
+        line.runs.insert( run + 2, font.createGlyphVector(frc, line.chars.view.slice(col, col + line.runs(run).getNumGlyphs - offset).toArray) )
+        line.runs(run) = font.createGlyphVector( frc, line.chars.view.slice(col - offset, col).toArray )
     }
 
     line.chars.insertAll( col, s )
@@ -196,7 +201,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     val line = lines(from.row)
 
     line.runs(run) = line.runs(run).getFont.createGlyphVector( frc,
-      line.chars.view(from.col + offset + 1, from.col + line.runs(run).getNumGlyphs).toArray )
+      line.chars.view.slice(from.col + offset + 1, from.col + line.runs(run).getNumGlyphs).toArray )
     line.chars.remove( from.col, offset + 1 )
   }
 
@@ -204,8 +209,8 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
     val line = lines(from.row)
 
     line.runs(run) = line.runs(run).getFont.createGlyphVector( frc,
-      (line.chars.view(from.col - offset, from.col) ++
-        line.chars.view(from.col + len, from.col + line.runs(run).getNumGlyphs)).toArray )
+      (line.chars.view.slice(from.col - offset, from.col) ++
+        line.chars.view.slice(from.col + len, from.col + line.runs(run).getNumGlyphs)).toArray )
     line.chars.remove( from.col, len )
   }
 
@@ -214,7 +219,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
     line.chars.remove( from.col, line.runs(run).getNumGlyphs - offset )
     line.runs(run) = line.runs(run).getFont.createGlyphVector( frc,
-      line.chars.view(from.col - offset, from.col).toArray )
+      line.chars.view.slice(from.col - offset, from.col).toArray )
   }
 
   private def removeEntireRun( from: Pos, run: Int ): Unit = {
@@ -319,7 +324,7 @@ class TextBuffer( val font: Font, val frc: FontRenderContext ) {
 
   def extract( row: Int, len: Int ) = {
     require( 0 <= row && row < lines.length, s"row index out of range: $row" )
-    Extract( row, lines.view(row, row + len).map(l => (l.runs.aggregate(0)((x, v) => x + v.getNumGlyphs, _ + _), l.runs.toList)).toVector )
+    Extract( row, lines.view.slice(row, row + len).map(l => (l.runs.foldLeft(0)(_ + _.getNumGlyphs), l.runs.toList)).toVector )
   }
 }
 
@@ -330,4 +335,3 @@ case class Pos( row: Int, col: Int ) {
 }
 
 case class Extract( row: Int, rows: Vector[(Int, List[GlyphVector])] )
-//todo: 4th eve part-time 5144832121 2237

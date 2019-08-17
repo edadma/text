@@ -4,14 +4,15 @@ package xyz.hyperreal.text
 import java.awt.Color._
 import java.awt.{BasicStroke, RenderingHints}
 import java.awt.geom.{Line2D, Rectangle2D}
+
 import javax.swing.Timer
 
-import scala.swing.{Graphics2D, Panel}
+import scala.swing.{Dimension, Graphics2D, Orientation, Panel, Rectangle, Scrollable}
 import scala.swing.Swing._
 import scala.swing.event.{Key, KeyPressed, KeyTyped}
 
 
-class TextPanel( cols: Int, rows: Int, buffer: TextBuffer ) extends Panel {
+class TextPanel( cols: Int, rows: Int, buffer: TextBuffer ) extends Panel with Scrollable {
 
   val drawboxes = false
   val (width, height, ascent) = {
@@ -30,7 +31,8 @@ class TextPanel( cols: Int, rows: Int, buffer: TextBuffer ) extends Panel {
   buffer addView this
   blink.start
 
-  preferredSize = ((width*cols).toInt, (height*rows).toInt)
+//  preferredSize = ((width*cols).toInt, (height*rows).toInt)
+  preferredSize = (200, 2000)
   background = DARK_GRAY.darker
   foreground = LIGHT_GRAY
   peer.setFocusTraversalKeysEnabled( false )
@@ -155,5 +157,15 @@ class TextPanel( cols: Int, rows: Int, buffer: TextBuffer ) extends Panel {
         g.draw( new Line2D.Double(x, y, x + width, y) )
       }
   }
+
+  override def preferredViewportSize: Dimension = (400, 200)
+
+  override def tracksViewportHeight: Boolean = true
+
+  override def tracksViewportWidth: Boolean = true
+
+  override def blockIncrement(visibleRect: Rectangle, orientation: Orientation.Value, direction: Int): Int = 0
+
+  override def unitIncrement(visibleRect: Rectangle, orientation: Orientation.Value, direction: Int): Int = 0
 
 }
